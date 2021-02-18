@@ -81,7 +81,7 @@ impl JsonFormat {
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(global_setting = structopt::clap::AppSettings::ColoredHelp)]
+#[structopt(name = "ipinfo", global_setting = structopt::clap::AppSettings::ColoredHelp)]
 /// Get IP details from IPinfo.io
 pub struct Args {
     /// Color mode
