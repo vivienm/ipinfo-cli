@@ -1,5 +1,5 @@
 [package]
-name = "ipinfo"
+name = "ipinfo-cli"
 version = "0.1.0"
 authors = ["Vivien Maisonneuve <v.maisonneuve@gmail.com>"]
 edition = "2018"
@@ -17,3 +17,7 @@ serde = "1.0.123"
 serde_json = "1.0.62"
 structopt = "0.3.21"
 tokio = { version = "1.2.0", features = ["macros"] }
+
+[[bin]]
+name = "ipinfo"
+path = "src/main.rs"
