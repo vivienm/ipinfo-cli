@@ -18,7 +18,7 @@ http = "0.2.3"
 hyper = { version = "0.14.4", features = ["client", "http1", "stream"] }
 hyper-tls = "0.5.0"
 serde = "1.0.123"
-serde_json = "1.0.62"
+serde_json = { version = "1.0.62", features = ["preserve_order"] }
 structopt = "0.3.21"
 tokio = { version = "1.2.0", features = ["macros"] }
 
