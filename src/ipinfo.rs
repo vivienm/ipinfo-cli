@@ -100,3 +100,34 @@ impl Builder {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Client;
+
+    #[tokio::test]
+    async fn test_get_ip() {
+        let client = Client::new();
+        let ip = "8.8.8.8".parse().unwrap();
+        let info = client.get_ip(&ip).await.unwrap();
+        assert_eq!(
+            info,
+            serde_json::from_str::<serde_json::Value>(
+                r#"{
+                    "anycast": true,
+                    "city": "Mountain View",
+                    "country": "US",
+                    "hostname": "dns.google",
+                    "ip": "8.8.8.8",
+                    "loc": "37.4056,-122.0775",
+                    "org": "AS15169 Google LLC",
+                    "postal": "94043",
+                    "readme": "https://ipinfo.io/missingauth",
+                    "region": "California",
+                    "timezone": "America/Los_Angeles"
+                }"#
+            )
+            .unwrap()
+        );
+    }
+}

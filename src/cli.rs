@@ -116,3 +116,30 @@ pub struct Args {
     /// IP address
     pub ip: Option<net::IpAddr>,
 }
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::{ColorMode, JsonFormat};
+
+    #[test]
+    fn test_color_mode() {
+        for variant in &ColorMode::variants() {
+            assert_eq!(
+                format!("{}", ColorMode::from_str(variant).unwrap()),
+                *variant
+            );
+        }
+    }
+
+    #[test]
+    fn test_json_format() {
+        for variant in &JsonFormat::variants() {
+            assert_eq!(
+                format!("{}", JsonFormat::from_str(variant).unwrap()),
+                *variant
+            );
+        }
+    }
+}
