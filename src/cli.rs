@@ -2,7 +2,7 @@ use std::fmt;
 use std::net;
 use std::str::FromStr;
 
-// use structopt::clap::Shell;
+use structopt::clap::Shell;
 use structopt::StructOpt;
 
 #[derive(Debug)]
@@ -92,6 +92,12 @@ pub struct Args {
         possible_values = &ColorMode::variants(),
     )]
     pub color: ColorMode,
+    /// Generates a completion file
+    #[structopt(
+        long = "completion",
+        possible_values = &Shell::variants(),
+    )]
+    pub completion: Option<Shell>,
     /// Formatting
     #[structopt(
         short = "f",
