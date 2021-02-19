@@ -1,11 +1,27 @@
 use std::net::IpAddr;
 
+use derive_more::From;
 use futures::StreamExt;
 use hyper::client::connect::HttpConnector;
 use hyper::{Method, Request, Uri};
 use hyper_tls::HttpsConnector;
 
 use crate::error::{Error, Result};
+
+#[derive(Debug, From, PartialEq)]
+pub struct IpInfo(pub serde_json::Value);
+
+impl IpInfo {
+    pub fn into_value(self) -> serde_json::Value {
+        let IpInfo(value) = self;
+        value
+    }
+
+    pub fn as_value(&self) -> &serde_json::Value {
+        let IpInfo(value) = self;
+        value
+    }
+}
 
 pub struct Client {
     http_client: hyper::Client<HttpsConnector<HttpConnector>, hyper::Body>,
@@ -29,7 +45,7 @@ impl Client {
         Builder::default()
     }
 
-    async fn get_uri(&self, uri: Uri) -> Result<serde_json::Value> {
+    async fn get_uri(&self, uri: Uri) -> Result<IpInfo> {
         // Build the query.
         let mut req_builder = Request::builder()
             .method(Method::GET)
@@ -55,15 +71,15 @@ impl Client {
         }
 
         // Deserialize the response body.
-        let body: serde_json::Value = serde_json::from_slice(&body)?;
-        Ok(body)
+        let info: IpInfo = serde_json::from_slice::<serde_json::Value>(&body)?.into();
+        Ok(info)
     }
 
-    pub async fn get(&self) -> Result<serde_json::Value> {
+    pub async fn get(&self) -> Result<IpInfo> {
         self.get_uri(Uri::from_static("https://ipinfo.io")).await
     }
 
-    pub async fn get_ip(&self, ip: &IpAddr) -> Result<serde_json::Value> {
+    pub async fn get_ip(&self, ip: &IpAddr) -> Result<IpInfo> {
         let uri = format!("https://ipinfo.io/{}", ip).parse::<Uri>()?;
         self.get_uri(uri).await
     }
@@ -103,7 +119,7 @@ impl Builder {
 
 #[cfg(test)]
 mod tests {
-    use super::Client;
+    use super::{Client, IpInfo};
 
     #[tokio::test]
     async fn test_get_ip() {
@@ -112,22 +128,24 @@ mod tests {
         let info = client.get_ip(&ip).await.unwrap();
         assert_eq!(
             info,
-            serde_json::from_str::<serde_json::Value>(
-                r#"{
-                    "anycast": true,
-                    "city": "Mountain View",
-                    "country": "US",
-                    "hostname": "dns.google",
-                    "ip": "8.8.8.8",
-                    "loc": "37.4056,-122.0775",
-                    "org": "AS15169 Google LLC",
-                    "postal": "94043",
-                    "readme": "https://ipinfo.io/missingauth",
-                    "region": "California",
-                    "timezone": "America/Los_Angeles"
-                }"#
+            IpInfo(
+                serde_json::from_str::<serde_json::Value>(
+                    r#"{
+                        "anycast": true,
+                        "city": "Mountain View",
+                        "country": "US",
+                        "hostname": "dns.google",
+                        "ip": "8.8.8.8",
+                        "loc": "37.4056,-122.0775",
+                        "org": "AS15169 Google LLC",
+                        "postal": "94043",
+                        "readme": "https://ipinfo.io/missingauth",
+                        "region": "California",
+                        "timezone": "America/Los_Angeles"
+                    }"#
+                )
+                .unwrap()
             )
-            .unwrap()
         );
     }
 }

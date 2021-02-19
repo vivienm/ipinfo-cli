@@ -10,7 +10,7 @@ use structopt::StructOpt;
 
 use crate::cli::{self, ColorMode, JsonFormat};
 use crate::error::Result;
-use crate::ipinfo::Client;
+use crate::ipinfo::{Client, IpInfo};
 
 fn open_output<P: AsRef<Path>>(path: Option<P>) -> Result<Box<dyn io::Write>> {
     Ok(match path {
@@ -31,7 +31,7 @@ fn build_client(token: Option<String>) -> Client {
     client_builder.build()
 }
 
-async fn get_info(client: &Client, ip: Option<net::IpAddr>) -> Result<serde_json::Value> {
+async fn get_info(client: &Client, ip: Option<net::IpAddr>) -> Result<IpInfo> {
     if let Some(ip) = ip {
         client.get_ip(&ip).await
     } else {
@@ -49,18 +49,18 @@ fn use_color(color: &ColorMode, is_stdout: bool) -> bool {
 }
 
 fn serialize_info<F: serde_json::ser::Formatter, W: io::Write>(
-    info: &serde_json::Value,
+    info: &IpInfo,
     formatter: F,
     output: &mut W,
 ) -> Result<()> {
     let mut serializer = serde_json::Serializer::with_formatter(output, formatter);
-    info.serialize(&mut serializer)?;
+    info.as_value().serialize(&mut serializer)?;
     writeln!(serializer.into_inner())?;
     Ok(())
 }
 
 fn print_info<W: io::Write>(
-    info: &serde_json::Value,
+    info: &IpInfo,
     color: bool,
     format: &JsonFormat,
     output: &mut W,
