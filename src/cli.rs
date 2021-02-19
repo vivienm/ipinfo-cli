@@ -1,5 +1,6 @@
 use std::fmt;
 use std::net;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use structopt::clap::Shell;
@@ -103,9 +104,12 @@ pub struct Args {
         short = "f",
         long = "format",
         default_value = "pretty",
-        possible_values = &JsonFormat::variants()
+        possible_values = &JsonFormat::variants(),
     )]
     pub format: JsonFormat,
+    /// Output file
+    #[structopt(short = "o", long = "output", parse(from_os_str))]
+    pub output: Option<PathBuf>,
     /// API token
     #[structopt(short = "t", long = "token", env = "IPINFO_TOKEN")]
     pub token: Option<String>,

@@ -1,5 +1,7 @@
+use std::fs;
 use std::io;
 use std::net;
+use std::path::Path;
 
 use colored_json::{ColoredFormatter, CompactFormatter, PrettyFormatter};
 use serde::Serialize;
@@ -10,8 +12,15 @@ use crate::cli::{self, ColorMode, JsonFormat};
 use crate::error::Result;
 use crate::ipinfo::Client;
 
-fn generate_completion(shell: Shell) {
-    cli::Args::clap().gen_completions_to("ipinfo", shell, &mut io::stdout());
+fn open_output<P: AsRef<Path>>(path: Option<P>) -> Result<Box<dyn io::Write>> {
+    Ok(match path {
+        None => Box::new(io::stdout()),
+        Some(path) => Box::new(fs::File::create(path)?),
+    })
+}
+
+fn generate_completion<W: io::Write>(shell: Shell, output: &mut W) {
+    cli::Args::clap().gen_completions_to("ipinfo", shell, output);
 }
 
 fn build_client(token: Option<String>) -> Client {
@@ -30,10 +39,11 @@ async fn get_info(client: &Client, ip: Option<net::IpAddr>) -> Result<serde_json
     }
 }
 
-fn use_color(color: &ColorMode) -> bool {
+fn use_color(color: &ColorMode, is_stdout: bool) -> bool {
     match color {
         ColorMode::Always => true,
         ColorMode::Never => false,
+        ColorMode::Auto if !is_stdout => false,
         ColorMode::Auto => colored_json::ColorMode::Auto(colored_json::Output::StdOut).use_color(),
     }
 }
@@ -49,9 +59,13 @@ fn serialize_info<F: serde_json::ser::Formatter, W: io::Write>(
     Ok(())
 }
 
-fn print_info(info: &serde_json::Value, color: &ColorMode, format: &JsonFormat) -> Result<()> {
-    let output = &mut io::stdout();
-    match (use_color(color), format) {
+fn print_info<W: io::Write>(
+    info: &serde_json::Value,
+    color: bool,
+    format: &JsonFormat,
+    output: &mut W,
+) -> Result<()> {
+    match (color, format) {
         (false, JsonFormat::Compact) => {
             let formatter = CompactFormatter {};
             serialize_info(info, formatter, output)
@@ -72,12 +86,17 @@ fn print_info(info: &serde_json::Value, color: &ColorMode, format: &JsonFormat) 
 }
 
 pub async fn main(args: cli::Args) -> Result<()> {
+    let mut output = open_output(args.output.as_ref())?;
     if let Some(shell) = args.completion {
-        generate_completion(shell);
+        generate_completion(shell, &mut output);
     } else {
         let client = build_client(args.token);
-        let info = get_info(&client, args.ip).await?;
-        print_info(&info, &args.color, &args.format)?;
+        print_info(
+            &get_info(&client, args.ip).await?,
+            use_color(&args.color, args.output.is_none()),
+            &args.format,
+            &mut output,
+        )?;
     }
     Ok(())
 }
